@@ -1,58 +1,66 @@
 const gallery = document.getElementById("gallery");
-const btnLoad = document.getElementById("btnLoad");
-const btnClear = document.getElementById("btnClear");
-const btnDeleteLast = document.getElementById("btnDeleteLast");
-const btnReverse = document.getElementById("btnReverse");
+const loadMoreBtn = document.getElementById("btnLoad");
+const clearBtn = document.getElementById("btnClear");
+const removeLastBtn = document.getElementById("btnDeleteLast");
+const reverseBtn = document.getElementById("btnReverse");
 
+let allImages = []; 
+let page = 1;       
 
-let images = []; // список картинок з API
-let index = 0; // поточна позиція в масиві
-
-
-async function loadFromAPI() {
-const response = await fetch("https://picsum.photos/v2/list?page=1&limit=100");
-images = await response.json();
+async function fetchImages(count = 4) {
+  try {
+    const response = await fetch(
+      `https://picsum.photos/v2/list?page=${page}&limit=100`
+    );
+    const data = await response.json();
+    page++; 
+    return data;
+  } catch (error) {
+    console.error("Помилка при завантаженні картинок:", error);
+    return [];
+  }
 }
 
-
-function addImages() {
-for (let i = 0; i < 4; i++) {
-if (index >= images.length) return;
-
-
-const img = document.createElement("img");
-img.src = images[index].download_url;
-gallery.appendChild(img);
-index++;
-}
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
 }
 
+function renderImages(images, count = 4) {
+  shuffleArray(images); 
+  const selectedImages = images.slice(0, count); 
+  
+  selectedImages.forEach((img) => {
+    const imageElement = document.createElement("img");
+    imageElement.src = img.download_url;
+    imageElement.alt = img.author;
+    gallery.appendChild(imageElement);
+    allImages.push(imageElement);
+  });
+}
 
-window.addEventListener("load", async () => {
-await loadFromAPI();
-addImages();
+fetchImages().then((data) => renderImages(data));
+
+loadMoreBtn.addEventListener("click", async () => {
+  const data = await fetchImages();
+  renderImages(data);
 });
 
-
-btnLoad.addEventListener("click", addImages);
-
-
-btnClear.addEventListener("click", () => {
-gallery.innerHTML = "";
-index = 0;
+clearBtn.addEventListener("click", () => {
+  gallery.innerHTML = "";
+  allImages = [];
+  page = 1; 
 });
 
-
-btnDeleteLast.addEventListener("click", () => {
-const last = gallery.lastElementChild;
-if (last) last.remove();
+removeLastBtn.addEventListener("click", () => {
+  const lastImage = allImages.pop();
+  if (lastImage) gallery.removeChild(lastImage);
 });
 
-
-btnReverse.addEventListener("click", () => {
-const items = Array.from(gallery.children);
-gallery.innerHTML = "";
-for (let i = items.length - 1; i >= 0; i--) {
-gallery.appendChild(items[i]);
-}
+reverseBtn.addEventListener("click", () => {
+  allImages.reverse();
+  gallery.innerHTML = "";
+  allImages.forEach((img) => gallery.appendChild(img));
 });
